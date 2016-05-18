@@ -26,12 +26,34 @@ if ($_SESSION){
            </form>
            ";
     if (isset($_POST['download'])) {
-        unlink($myrow['file_name']);
-        $sql_del = "DELETE FROM `files` WHERE `user` =  '" . $login . "'";
-        $result = mysql_query($sql_del, $db);
-        echo "Файл удален";
-        empty($_POST['del_but']);
-        echo '<br><a href="menu.php">Вернутся в меню </a>';
+        $sql_select = "SELECT * FROM `files` WHERE user = '" . $login . "'";
+        include ("bd.php");
+        $result = mysql_query($sql_select, $db);
+        $myrow = mysql_fetch_array($result);
+        $file = $myrow['file_name'];
+        if (file_exists($file)) {
+            // сбрасываем буфер вывода PHP, чтобы избежать переполнения памяти выделенной под скрипт
+            // если этого не сделать файл будет читаться в память полностью!
+            if (ob_get_level()) {
+                ob_end_clean();
+            }
+            // заставляем браузер показать окно сохранения файла
+            header('Content-Description: File Transfer');
+            header('Content-Type: application/octet-stream');
+            header('Content-Disposition: attachment; filename=' . basename($file));
+            header('Content-Transfer-Encoding: binary');
+            header('Expires: 0');
+            header('Cache-Control: must-revalidate');
+            header('Pragma: public');
+            header('Content-Length: ' . filesize($file));
+            // читаем файл и отправляем его пользователю
+            readfile($file);
+            empty($_POST['download']);
+            exit;
+        }
+        else{
+            echo "Вы не загрузили не одного файла";
+        }
     }
 }
 else{
